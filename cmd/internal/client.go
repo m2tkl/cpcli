@@ -72,6 +72,45 @@ func (c *Client) newRequest(ctx context.Context, method string, urlpath string, 
 	return req, nil
 }
 
+// Fetch Contest tasks
+//
+// Sample:
+//
+//	 map[
+//			a:https://atcoder.jp/contests/abc064/tasks/abc064_a
+//			b:https://atcoder.jp/contests/abc064/tasks/abc064_b
+//			c:https://atcoder.jp/contests/abc064/tasks/abc064_c
+//			d:https://atcoder.jp/contests/abc064/tasks/abc064_d
+//		]
+func (c *Client) FetchContestTasks(contest string) map[string]string {
+	ctx := context.Background()
+	url := "/contests/" + contest + "/tasks"
+	req, _ := c.newRequest(ctx, "GET", url, nil)
+
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer res.Body.Close()
+
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	tasks := map[string]string{}
+	config := NewAcConfig()
+
+	doc.Find("tbody").Find("tr").Each(func(i int, s *goquery.Selection) {
+		item := s.Find("td").Find("a")
+		probType := strings.ToLower(string(item.Text()[0]))
+		probPath, _ := item.Attr("href")
+		tasks[probType] = config.Endpoint + probPath
+	})
+
+	return tasks
+}
+
 func (c *Client) GetCsrfToken(urlpath string) string {
 	ctx := context.Background()
 	req, _ := c.newRequest(ctx, "GET", urlpath, nil)
