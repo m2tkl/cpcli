@@ -77,10 +77,10 @@ func (c *Client) newRequest(ctx context.Context, method string, urlpath string, 
 // Sample:
 //
 //	 map[
-//			a:https://atcoder.jp/contests/abc064/tasks/abc064_a
-//			b:https://atcoder.jp/contests/abc064/tasks/abc064_b
-//			c:https://atcoder.jp/contests/abc064/tasks/abc064_c
-//			d:https://atcoder.jp/contests/abc064/tasks/abc064_d
+//			a:/contests/abc064/tasks/abc064_a
+//			b:/contests/abc064/tasks/abc064_b
+//			c:/contests/abc064/tasks/abc064_c
+//			d:/contests/abc064/tasks/abc064_d
 //		]
 func (c *Client) FetchContestTasks(contest string) map[string]string {
 	ctx := context.Background()
@@ -99,13 +99,12 @@ func (c *Client) FetchContestTasks(contest string) map[string]string {
 	}
 
 	tasks := map[string]string{}
-	config := NewAcConfig()
 
 	doc.Find("tbody").Find("tr").Each(func(i int, s *goquery.Selection) {
 		item := s.Find("td").Find("a")
 		probType := strings.ToLower(string(item.Text()[0]))
 		probPath, _ := item.Attr("href")
-		tasks[probType] = config.Endpoint + probPath
+		tasks[probType] = probPath
 	})
 
 	return tasks
