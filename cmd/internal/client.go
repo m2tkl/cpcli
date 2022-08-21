@@ -110,6 +110,53 @@ func (c *Client) FetchContestTasks(contest string) map[string]string {
 	return tasks
 }
 
+type TestCase struct {
+	in  string
+	out string
+}
+
+func (c *Client) FetchSampleTestCases(taskPath string) []TestCase {
+	ctx := context.Background()
+	req, _ := c.newRequest(ctx, "GET", taskPath, nil)
+
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer res.Body.Close()
+
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var sampleTestCases []string
+
+	jaSection := doc.Find(".lang-ja")
+	jaSection.Find("div.part").Each(func(i int, s *goquery.Selection) {
+		title := s.Find("h3").Text()
+		if strings.Contains(title, "入力例") {
+			// fmt.Println(s.Find("pre").Text())
+			sampleTestCases = append(sampleTestCases, s.Find("pre").Text())
+		}
+		if strings.Contains(title, "出力例") {
+			// fmt.Println(s.Find("pre").Text())
+			sampleTestCases = append(sampleTestCases, s.Find("pre").Text())
+		}
+	})
+
+	var testCases []TestCase
+	for i := 0; i < len(sampleTestCases); i += 2 {
+		tc := TestCase{
+			in:  sampleTestCases[i],
+			out: sampleTestCases[i+1],
+		}
+		testCases = append(testCases, tc)
+	}
+	fmt.Println(testCases)
+	return testCases
+}
+
 func (c *Client) GetCsrfToken(urlpath string) string {
 	ctx := context.Background()
 	req, _ := c.newRequest(ctx, "GET", urlpath, nil)
