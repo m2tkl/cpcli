@@ -4,6 +4,8 @@ Copyright © 2022 m2tkl
 package cmd
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"os"
 
@@ -40,6 +42,11 @@ func init() {
 	// configureCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
+type Config struct {
+	Dir      string `json:"dir"`
+	Template string `json:"template"`
+}
+
 func configure() {
 	acConfig := internal.NewAcConfig()
 
@@ -48,5 +55,20 @@ func configure() {
 		log.Fatal(err)
 	}
 
-	// TODO: Create config file
+	cwd, _ := os.Getwd()
+
+	// NOTE:
+	// 		If config file already exists,
+	// 		confirm whether to overwrite it while displaying the contents.
+
+	// TODO: Receive stdin
+
+	config := Config{
+		Dir:      cwd,
+		Template: "",
+	}
+
+	file, _ := json.MarshalIndent(config, "", " ")
+	_ = ioutil.WriteFile(acConfig.Dir+"/config.json", file, 0644)
+
 }
