@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -55,20 +56,70 @@ func configure() {
 		log.Fatal(err)
 	}
 
-	cwd, _ := os.Getwd()
-
 	// NOTE:
 	// 		If config file already exists,
 	// 		confirm whether to overwrite it while displaying the contents.
 
-	// TODO: Receive stdin
-
-	config := Config{
-		Dir:      cwd,
-		Template: "",
+	configJson, err := ioutil.ReadFile(acConfig.Dir + "/config.json")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
-	file, _ := json.MarshalIndent(config, "", " ")
-	_ = ioutil.WriteFile(acConfig.Dir+"/config.json", file, 0644)
+	// TODO: impl '--reset' option
 
+	var config Config
+	json.Unmarshal([]byte(configJson), &config)
+	fmt.Println(config.Dir)
+
+	var dirPath string
+
+	if config.Dir != "" {
+		fmt.Printf("(%s) Enter directory path: ", config.Dir)
+		fmt.Scanln(&dirPath)
+
+		// If not entered, use saved directory path
+		if dirPath == "" {
+			dirPath = config.Dir
+		}
+
+	} else {
+		fmt.Print("Enter directory path: ")
+		fmt.Scanln(&dirPath)
+
+		// If not entered, use current directory
+		if dirPath == "" {
+			dirPath, _ = os.Getwd()
+		}
+	}
+
+	var templatePath string
+
+	if config.Template != "" {
+		fmt.Printf("(%s) Enter template path: ", config.Template)
+		fmt.Scanln(&templatePath)
+
+		// If not entered, use saved directory path
+		if templatePath == "" {
+			templatePath = config.Template
+		}
+
+	} else {
+		fmt.Print("Enter template path: ")
+		fmt.Scanln(&templatePath)
+
+		// TODO: use default value
+		// If not entered, not set path
+		if templatePath == "" {
+			templatePath = ""
+		}
+	}
+
+	newConfig := Config{
+		Dir:      dirPath,
+		Template: templatePath,
+	}
+
+	file, _ := json.MarshalIndent(newConfig, "", " ")
+	_ = ioutil.WriteFile(acConfig.Dir+"/config.json", file, 0644)
 }
