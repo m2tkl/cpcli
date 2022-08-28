@@ -111,8 +111,8 @@ func (c *Client) FetchContestTasks(contest string) map[string]string {
 }
 
 type TestCase struct {
-	in  string
-	out string
+	In  string
+	Out string
 }
 
 func (c *Client) FetchSampleTestCases(taskPath string) []TestCase {
@@ -148,8 +148,8 @@ func (c *Client) FetchSampleTestCases(taskPath string) []TestCase {
 	var testCases []TestCase
 	for i := 0; i < len(sampleTestCases); i += 2 {
 		tc := TestCase{
-			in:  sampleTestCases[i],
-			out: sampleTestCases[i+1],
+			In:  sampleTestCases[i],
+			Out: sampleTestCases[i+1],
 		}
 		testCases = append(testCases, tc)
 	}
