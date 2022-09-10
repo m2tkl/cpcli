@@ -4,7 +4,13 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
+	"strconv"
 
 	"github.com/m2tkl/cpcli/cmd/internal"
 	"github.com/spf13/cobra"
@@ -40,8 +46,80 @@ func init() {
 	// setupCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
+func exists(name string) bool {
+	_, err := os.Stat(name)
+	return !os.IsNotExist(err)
+}
+
 func setup(contest string) {
-	c, _ := internal.NewClient(internal.NewAcConfig().Endpoint, nil)
+	acConfig := internal.NewAcConfig()
+	c, _ := internal.NewClient(acConfig.Endpoint, nil)
+
 	tasks := c.FetchContestTasks(contest)
-	fmt.Println(tasks)
+
+	path := filepath.Join(acConfig.Dir + "/config.json")
+	jsonText, err := ioutil.ReadFile(path)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	var config Config
+	json.Unmarshal([]byte(jsonText), &config)
+	fmt.Println(config.Dir)
+
+	contestDirPath := config.Dir + "/contests/" + contest
+
+	err = os.MkdirAll(contestDirPath, os.ModePerm)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for k, v := range tasks {
+		fmt.Println(k)
+		fmt.Println(v)
+		taskCases := c.FetchSampleTestCases(v)
+
+		taskDirPath := contestDirPath + "/" + k
+
+		// Create task dirs
+		err = os.MkdirAll(taskDirPath+"/tests", os.ModePerm)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Create main.go
+		// TODO: copy template (option)
+		if !exists(taskDirPath + "/main.go") {
+			fp, err := os.Create(taskDirPath + "/main.go")
+			if err != nil {
+				log.Fatal(err)
+				return
+			}
+			defer fp.Close()
+		}
+
+		var taskTestDir string
+		for i, taskCase := range taskCases {
+			fmt.Println(taskCase)
+			taskTestDir = taskDirPath + "/tests/" + strconv.Itoa(i+1)
+			err := os.Mkdir(taskTestDir, os.ModePerm)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			writeLines(taskTestDir+"/in.txt", taskCase.In)
+			writeLines(taskTestDir+"/out.txt", taskCase.Out)
+		}
+	}
+}
+
+func writeLines(filePath string, value string) error {
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	fmt.Fprintln(f, value)
+	return nil
 }
